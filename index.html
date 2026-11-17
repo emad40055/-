@@ -110,7 +110,7 @@ main{margin-top:24px!important}
         </div>
     </div>
 
-<div id="settingsModal" class="fixed inset-0 bg-slate-950/65 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4"><div class="modal-panel"><div class="flex justify-between items-center"><h3 class="text-xl font-black">⚙️ إعدادات السكن والتصدير</h3><button onclick="closeModal('settingsModal')" class="text-slate-500 text-2xl" aria-label="إغلاق">×</button></div><div class="settings-section bg-slate-50"><h4>🏢 إعدادات الغرف</h4><div class="grid grid-cols-2 gap-3"><label class="text-xs font-bold">عدد الغرف الإجمالي<input id="roomCountInput" type="number" min="1" max="1000" class="field mt-2"></label><label class="text-xs font-bold">رقم أول غرفة<input id="firstRoomInput" type="number" min="1" class="field mt-2"></label></div><button onclick="updateRoomStructure()" class="action-btn bg-slate-950 text-white w-full mt-3">تحديث هيكل الغرف</button><p class="text-xs text-slate-500 mt-2">تقليل عدد الغرف لا يحذف غرفاً مأهولة دون تأكيد.</p></div><div class="settings-section bg-blue-50/40"><h4>💾 تصدير الكشوفات والنسخ الاحتياطية</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="exportCSV()" class="action-btn bg-green-700 text-white">📊 تصدير إلى Excel (CSV)</button><button onclick="exportJSON()" class="action-btn bg-blue-700 text-white">☁️ حفظ نسخة احتياطية (JSON)</button></div><label class="action-btn block text-center border border-slate-300 bg-white mt-3 cursor-pointer">📥 استيراد نسخة احتياطية من ملف (JSON)<input type="file" accept=".json,application/json" class="hidden" onchange="importJSON(event)"></label></div><div class="settings-section bg-slate-50"><h4>🛠️ أدوات المعاينة والتصفير</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="fillDemo()" class="action-btn bg-amber-100 text-amber-900">✨ تعبئة بيانات تجريبية</button><button onclick="clearRooms()" class="action-btn bg-red-100 text-red-800">⚠️ تصفير جميع الغرف</button></div></div></div></div>
+<div id="settingsModal" class="fixed inset-0 bg-slate-950/65 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4"><div class="modal-panel"><div class="flex justify-between items-center"><h3 class="text-xl font-black">⚙️ إعدادات السكن والتصدير</h3><button onclick="closeModal('settingsModal')" class="text-slate-500 text-2xl" aria-label="إغلاق">×</button></div><div class="settings-section bg-slate-50"><h4>🏢 إعدادات الغرف</h4><div class="grid grid-cols-2 gap-3"><label class="text-xs font-bold">عدد الغرف الإجمالي<input id="roomCountInput" type="number" min="1" max="1000" class="field mt-2"></label><label class="text-xs font-bold">رقم أول غرفة<input id="firstRoomInput" type="number" min="1" class="field mt-2"></label></div><button id="updateRoomsButton" type="button" onclick="updateRoomStructure()" class="action-btn bg-slate-950 text-white w-full mt-3">تحديث هيكل الغرف</button><p id="updateRoomsStatus" role="status" aria-live="polite" class="text-sm font-bold mt-2 text-slate-600"></p><p class="text-xs text-slate-500 mt-2">تقليل عدد الغرف لا يحذف غرفاً مأهولة دون تأكيد.</p></div><div class="settings-section bg-blue-50/40"><h4>💾 تصدير الكشوفات والنسخ الاحتياطية</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="exportCSV()" class="action-btn bg-green-700 text-white">📊 تصدير إلى Excel (CSV)</button><button onclick="exportJSON()" class="action-btn bg-blue-700 text-white">☁️ حفظ نسخة احتياطية (JSON)</button></div><label class="action-btn block text-center border border-slate-300 bg-white mt-3 cursor-pointer">📥 استيراد نسخة احتياطية من ملف (JSON)<input type="file" accept=".json,application/json" class="hidden" onchange="importJSON(event)"></label></div><div class="settings-section bg-slate-50"><h4>🛠️ أدوات المعاينة والتصفير</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="fillDemo()" class="action-btn bg-amber-100 text-amber-900">✨ تعبئة بيانات تجريبية</button><button onclick="clearRooms()" class="action-btn bg-red-100 text-red-800">⚠️ تصفير جميع الغرف</button></div></div></div></div>
     <script>
         const firebaseConfig = {
             databaseURL: "https://mutun-sakan-default-rtdb.firebaseio.com/"
@@ -312,27 +312,43 @@ function exportCSV(){const rows=[['رقم الغرفة','رقم السرير','�
 function exportJSON(){downloadData('mutun-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({version:1,exportedAt:new Date().toISOString(),rooms:globalRoomsData},null,2),'application/json');}
 async function importJSON(event){const file=event.target.files?.[0];if(!file)return;try{const raw=JSON.parse(await file.text()),rooms=raw.rooms||raw;if(!rooms||Array.isArray(rooms)||typeof rooms!=='object'||!Object.values(rooms).every(r=>r&&/^\d+$/.test(String(r.number))&&Array.isArray(r.beds)&&r.beds.length===3&&r.beds.every(b=>b===null||typeof b.name==='string'&&typeof b.phone==='string')&&typeof r.keyHolder==='string'))throw Error('صيغة النسخة غير صحيحة');if(confirm('استيراد النسخة سيستبدل بيانات السكن الحالية. هل أنت متأكد؟'))await dbRef.set(rooms);}catch(e){alert('تعذر استيراد الملف: '+e.message);}finally{event.target.value='';}}
 async function updateRoomStructure(){
- const count=Number(document.getElementById('roomCountInput').value);
- const start=Number(document.getElementById('firstRoomInput').value);
- if(!Number.isInteger(count)||count<1||count>1000||!Number.isInteger(start)||start<1){alert('أدخل عدد الغرف ورقم أول غرفة بشكل صحيح');return;}
+ const button=document.getElementById('updateRoomsButton');
+ const status=document.getElementById('updateRoomsStatus');
+ const count=Number(document.getElementById('roomCountInput')?.value);
+ const start=Number(document.getElementById('firstRoomInput')?.value);
+ const show=(message,error=false)=>{status.textContent=message;status.className='text-sm font-bold mt-2 '+(error?'text-red-700':'text-blue-700');};
+ if(!Number.isInteger(count)||count<1||count>1000||!Number.isInteger(start)||start<1){show('أدخل عدد الغرف ورقم أول غرفة بشكل صحيح.',true);return;}
+ if(button.disabled)return;
+ button.disabled=true;
+ const label=button.textContent;
+ button.textContent='جارٍ تحديث الغرف...';
+ show('بدأ التحديث، يرجى الانتظار وعدم إغلاق الصفحة.');
  const requested=Array.from({length:count},(_,i)=>String(start+i));
+ let added=0,failed=0;
  try{
-  const result=await dbRef.transaction(current=>{
-   const existing=(current&&typeof current==='object')?current:{};
-   const updated={...existing};
-   for(const id of requested){
-    if(!Object.prototype.hasOwnProperty.call(updated,id))updated[id]={number:id,beds:[null,null,null],keyHolder:'reception'};
+  for(let i=0;i<requested.length;i++){
+   const id=requested[i];
+   // Each transaction is limited to a single room, preserving occupied rooms and other supervisors' edits.
+   try{
+    const result=await Promise.race([
+     dbRef.child(id).transaction(current=>current||{number:id,beds:[null,null,null],keyHolder:'reception'},undefined,false),
+     new Promise((_,reject)=>setTimeout(()=>reject(new Error('انتهت مهلة الاتصال بقاعدة البيانات')),15000))
+    ]);
+    if(result.committed&&result.snapshot.exists()&&!globalRoomsData[id])added++;
+    if(!result.committed)failed++;
+   }catch(error){
+    console.error('Room creation error',id,error);
+    failed++;
+    show('تعذر حفظ الغرفة '+id+': '+(error?.message||'خطأ غير معروف'),true);
+    break;
    }
-   return updated;
-  },undefined,false);
-  if(!result.committed){alert('لم يتم تحديث الغرف. حاول مرة أخرى.');return;}
-  const actual=result.snapshot.val()||{};
-  const added=requested.filter(id=>Object.prototype.hasOwnProperty.call(actual,id)).length;
-  closeModal('settingsModal');
-  alert('تم تحديث هيكل الغرف بنجاح. عدد الغرف الإجمالي الآن: '+Object.keys(actual).length+' غرفة.');
- }catch(error){
-  console.error('Room structure update failed:',error);
-  alert('تعذر حفظ الغرف في Firebase. تحقق من الاتصال وصلاحيات قاعدة البيانات ثم حاول مرة أخرى.');
+   if((i+1)%10===0||i===requested.length-1)show('جارٍ فحص الغرف: '+(i+1)+' من '+requested.length+'...');
+  }
+  if(failed)show('تعذر إكمال التحديث. تمت معالجة '+(requested.length-failed)+' غرفة من '+requested.length+'. تحقق من اتصال Firebase ثم أعد المحاولة.',true);
+  else show('اكتمل التحديث. الغرف المطلوبة: '+count+'، والغرف التي كانت ناقصة وتم إنشاؤها تقريباً: '+added+'.');
+ }finally{
+  button.disabled=false;
+  button.textContent=label;
  }
 }
 async function clearRooms(){if(!confirm('تحذير: سيتم إخلاء جميع الطلاب وإرجاع المفاتيح للاستقبال. هل أنت متأكد؟'))return;if(!confirm('تأكيد نهائي: هل تريد تصفير جميع الغرف؟'))return;const next={};for(const r of roomList())next[r.number]={...r,beds:[null,null,null],keyHolder:'reception'};await dbRef.set(next);closeModal('settingsModal');}
