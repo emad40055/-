@@ -12,6 +12,42 @@
 
 <style>
 :root{color-scheme:light}body{background:#f4f6fa!important;color:#172238}header{background:#0b101b!important}header>div,main{max-width:1320px!important}main{margin-top:20px!important}.metric{background:#fff;border:1px solid #e1e6ef;border-radius:16px;padding:16px;min-height:91px;box-shadow:0 2px 8px #15243b08}.metric small{display:block;font-size:12px;color:#697487;font-weight:700}.metric strong{display:block;font-size:24px;font-weight:900;margin-top:8px}.room-card{background:#fff;border:1px solid #dce3ec;border-radius:17px;padding:15px;min-height:230px;box-shadow:0 3px 9px #16233809;display:flex;flex-direction:column;gap:10px}.room-card.partial{border-color:#e8cb87}.room-card.full{border-color:#a8d7bf}.room-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.room-title{font-weight:900;font-size:14px}.pill{border-radius:7px;padding:3px 9px;font-size:11px;font-weight:800;white-space:nowrap}.pill.empty{background:#d9f4e4;color:#14633c}.pill.partial{background:#fff1c4;color:#865a00}.pill.full{background:#dbeafe;color:#1e40af}.bed-line{border:1px dashed #d7dee9;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:37px;font-size:12px}.bed-line.vacant{color:#8993a5;background:#fafbfc}.bed-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}.icon-btn{border:0;border-radius:7px;padding:4px 7px;cursor:pointer}.icon-btn:hover{background:#eaf0f9}.room-foot{border-top:1px solid #e7ebf2;padding-top:9px;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:11px;color:#59687c}.filter-btn{border-radius:9px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap;background:#eef2f7;color:#42526a}.filter-btn.active{background:#101827;color:#fff}.modal-panel{background:#fff;border-radius:24px;max-width:660px;width:100%;padding:25px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 75px #0003}.settings-section{border:1px solid #e2e8f0;border-radius:17px;padding:18px;margin-top:16px}.settings-section h4{font-weight:900;margin-bottom:14px}.field{border:1px solid #d9e1eb;border-radius:11px;padding:11px;width:100%;background:#fff}.action-btn{border-radius:11px;padding:11px 14px;font-weight:800;font-size:13px}.action-btn:disabled{opacity:.5;cursor:not-allowed}@media(max-width:640px){.metric{padding:12px;min-height:78px}.metric strong{font-size:20px}.modal-panel{padding:16px}.room-card{min-height:210px}} 
+</style><style id="desktop-size-enhancements">
+@media(min-width:1024px){
+html{font-size:17px}
+header>div,main{max-width:1440px!important}
+header>div{padding-top:20px!important;padding-bottom:20px!important}
+header h1{font-size:23px!important}
+header p{font-size:14px!important}
+header button{font-size:15px!important;padding:12px 18px!important;min-height:46px}
+main{margin-top:24px!important}
+.metric{padding:21px 19px;min-height:116px;border-radius:18px}
+.metric small{font-size:14px;line-height:1.6}
+.metric strong{font-size:32px;margin-top:9px}
+#searchInput{font-size:16px;padding-top:16px;padding-bottom:16px}
+#filters{gap:10px;margin-top:16px}
+.filter-btn{font-size:14px;padding:11px 15px;min-height:44px}
+#visibleCount{font-size:17px}
+#roomsContainer{gap:18px}
+.room-card{padding:20px;min-height:300px;border-radius:19px;gap:14px}
+.room-title{font-size:18px}
+.pill{font-size:13px;padding:6px 11px}
+.bed-line{font-size:14px;min-height:50px;padding:10px 12px}
+.bed-line a{font-size:13px}
+.bed-actions .icon-btn{font-size:17px;padding:7px 10px}
+.room-foot{font-size:13px;padding-top:13px}
+.modal-panel{max-width:760px;padding:32px;border-radius:27px}
+.modal-panel h3{font-size:24px}
+.settings-section{padding:24px;margin-top:20px}
+.settings-section h4{font-size:18px}
+.settings-section label{font-size:15px}
+.field{font-size:16px;padding:14px}
+.action-btn{font-size:15px;padding:14px 17px;min-height:48px}
+#checkInModal>div,#shareModal>div{font-size:16px}
+#checkInModal input,#checkInModal select,#shareModal input{font-size:15px;padding:13px}
+#checkInModal button,#shareModal button{font-size:15px;padding:12px 16px}
+}
+@media(min-width:1024px) and (max-width:1199px){.room-card{padding:16px}.bed-line{font-size:13px}.metric{padding:16px 13px}.metric small{font-size:12px}}
 </style></head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
