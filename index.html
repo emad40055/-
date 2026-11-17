@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة سكن دورة المتون</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- استخدام Firebase لمزامنة البيانات سحابياً بين جميع المشرفين فوراً -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <style> body { font-family: 'Cairo', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+
+    <!-- شريط العلوى -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <span class="bg-indigo-700 p-2 rounded-xl text-xl">🏢</span>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">سكن دورة المتون</h1>
+                    <p class="text-xs text-indigo-200">مزامنة سحابية حية للمشرفين</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="openShareModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition">
+                    🔗 مشاركة الرابط
+                </button>
+                <button onclick="openCheckInModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition shadow">
+                    ➕ تسكين وصول جديد
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="max-w-6xl mx-auto px-4 mt-6">
+
+        <!-- الإحصائيات -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-500 font-medium">إجمالي الأسرة</p>
+                <h3 id="statTotalBeds" class="text-2xl font-black text-slate-900 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-500 font-medium">الطلاب المسكنون</p>
+                <h3 id="statOccupiedBeds" class="text-2xl font-black text-indigo-600 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-500 font-medium">الأسرة الشاغرة</p>
+                <h3 id="statEmptyBeds" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-500 font-medium">المفاتيح بالاستقبال</p>
+                <h3 id="statKeysReception" class="text-2xl font-black text-amber-600 mt-1">0</h3>
+            </div>
+        </div>
+
+        <!-- البحث والفلترة -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-3 justify-between items-center">
+            <div class="w-full md:w-96 relative">
+                <span class="absolute right-3 top-2.5 text-slate-400">🔍</span>
+                <input type="text" id="searchInput" oninput="renderApp()" placeholder="ابحث باسم الطالب، رقم الغرفة، أو الجوال..." class="w-full pr-10 pl-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap">الكل</button>
+                <button onclick="setFilter('empty')" id="filter-empty" class="filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">غرف شاغرة</button>
+                <button onclick="setFilter('key-reception')" id="filter-key-reception" class="filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">المفتاح بالاستقبال</button>
+                <button onclick="resetData()" class="text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-sm transition">إعادة ضبط</button>
+            </div>
+        </div>
+
+        <!-- شبكة الغرف -->
+        <div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- تُعبأ برمجياً -->
+        </div>
+
+    </main>
+
+    <!-- مودال التسكين -->
+    <div id="checkInModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900">➕ تسكين طلاب جدد</h3>
+                <button onclick="closeModal('checkInModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+            </div>
+            
+            <form id="checkInForm" onsubmit="handleCheckIn(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">عدد الطلاب القادمين معاً</label>
+                    <select id="groupSize" onchange="renderStudentInputs()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="1">طالب مفرد (فرد)</option>
+                        <option value="2">صديقان (2 طلاب)</option>
+                        <option value="3" selected>مجموعة كاملة (3 طلاب)</option>
+                    </select>
+                </div>
+
+                <div id="studentsInputsContainer" class="space-y-3"></div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اختر الغرفة المناسبة</label>
+                    <select id="targetRoomSelect" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"></select>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold text-sm transition">حفظ التسكين</button>
+                    <button type="button" onclick="closeModal('checkInModal')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm transition">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال المشاركة -->
+    <div id="shareModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900">🔗 مشاركة الرابط</h3>
+                <button onclick="closeModal('shareModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">انشر هذا الرابط للمشرفين ليعمل النظام لديهم جميعاً في نفس اللحظة:</p>
+            
+            <input type="text" id="currentUrlInput" readonly class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-center font-bold text-indigo-600 mb-4 select-all">
+
+            <button onclick="copyUrl()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold text-sm transition mb-2">نسخ الرابط</button>
+            <button onclick="closeModal('shareModal')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-semibold text-sm transition">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات الاتصال السحابي المجاني
+        const firebaseConfig = {
+            databaseURL: "https://mutun-sakan-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref('mutun_rooms_data');
+
+        const TOTAL_ROOMS = 30;
+        let currentFilter = 'all';
+        let globalRoomsData = {};
+
+        // الاستماع للتحديثات السحابية الحية فورياً
+        dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) {
+                // إنشاء البيانات أول مرة إذا كانت قاعدة البيانات فارغة
+                let initialRooms = {};
+                for (let i = 1; i <= TOTAL_ROOMS; i++) {
+                    let roomNo = (100 + i).toString();
+                    initialRooms[roomNo] = {
+                        number: roomNo,
+                        beds: [null, null, null],
+                        keyHolder: 'reception'
+                    };
+                }
+                dbRef.set(initialRooms);
+            } else {
+                globalRoomsData = data;
+                renderApp();
+            }
+        });
+
+        function renderApp() {
+            let container = document.getElementById('roomsContainer');
+            if(!container) return;
+            container.innerHTML = '';
+
+            let totalBeds = 0, occupiedBeds = 0, emptyBeds = 0, keysAtReception = 0;
+            let searchQuery = document.getElementById('searchInput').value.toLowerCase();
+
+            Object.values(globalRoomsData).forEach(room => {
+                totalBeds += 3;
+                let roomOccupied = room.beds.filter(b => b !== null).length;
+                occupiedBeds += roomOccupied;
+                emptyBeds += (3 - roomOccupied);
+                if (room.keyHolder === 'reception') keysAtReception++;
+
+                let matchSearch = room.number.includes(searchQuery) || room.beds.some(b => b && (b.name.toLowerCase().includes(searchQuery) || b.phone.includes(searchQuery)));
+                let matchTab = true;
+                if (currentFilter === 'empty') matchTab = roomOccupied < 3;
+                if (currentFilter === 'key-reception') matchTab = room.keyHolder === 'reception';
+
+                if (!matchSearch || !matchTab) return;
+
+                let card = document.createElement('div');
+                card.className = `bg-white rounded-2xl p-4 shadow-sm border ${roomOccupied === 3 ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100'} flex flex-col justify-between`;
+
+                let keyStatusHtml = room.keyHolder === 'reception' 
+                    ? `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">🔑 المفتاح: الاستقبال</span>`
+                    : `<span class="bg-indigo-100 text-indigo-800 text-xs px-2.5 py-1 rounded-full font-bold">🔑 مع الطالب: ${room.keyHolder}</span>`;
+
+                let bedsHtml = '';
+                room.beds.forEach((student, index) => {
+                    if (student) {
+                        bedsHtml += `
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
+                                <div>
+                                    <span class="font-bold text-slate-800">سرير ${index+1}:</span> ${student.name}
+                                    <a href="tel:${student.phone}" class="text-indigo-600 block mt-0.5">📞 ${student.phone}</a>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="setKey('${room.number}', '${student.name}')" title="تسليم المفتاح" class="p-1.5 bg-slate-100 hover:bg-amber-100 text-slate-600 rounded-lg text-xs transition">🔑</button>
+                                    <button onclick="removeStudent('${room.number}', ${index})" title="إخلاء" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs transition">✕</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        bedsHtml += `<div class="bg-slate-50/60 border border-dashed border-slate-200 p-2 rounded-xl text-xs text-slate-400">سرير ${index+1}: (شاغر)</div>`;
+                    }
+                });
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-black text-slate-900 text-base">غرفة رقم (${room.number})</h4>
+                            ${keyStatusHtml}
+                        </div>
+                        <div class="space-y-2 mb-4">${bedsHtml}</div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-500 font-medium">الإشغال: ${roomOccupied}/3</span>
+                        ${room.keyHolder !== 'reception' ? `<button onclick="returnKeyToReception('${room.number}')" class="text-amber-700 hover:underline font-semibold">إرجاع المفتاح للاستقبال</button>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('statTotalBeds').innerText = totalBeds;
+            document.getElementById('statOccupiedBeds').innerText = occupiedBeds;
+            document.getElementById('statEmptyBeds').innerText = emptyBeds;
+            document.getElementById('statKeysReception').innerText = keysAtReception;
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.className = "filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 whitespace-nowrap");
+            document.getElementById(`filter-${filter}`).className = "filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap";
+            renderApp();
+        }
+
+        function openCheckInModal() {
+            let select = document.getElementById('targetRoomSelect');
+            select.innerHTML = '';
+            Object.values(globalRoomsData).forEach(room => {
+                let emptyCount = room.beds.filter(b => b === null).length;
+                if (emptyCount > 0) {
+                    let opt = document.createElement('option');
+                    opt.value = room.number;
+                    opt.innerText = `غرفة ${room.number} (متاح ${emptyCount} أسرة)`;
+                    select.appendChild(opt);
+                }
+            });
+            renderStudentInputs();
+            document.getElementById('checkInModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+        function renderStudentInputs() {
+            let count = parseInt(document.getElementById('groupSize').value);
+            let container = document.getElementById('studentsInputsContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+                container.innerHTML += `
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                        <span class="text-xs font-bold text-indigo-600 block">بيانات الطالب رقم ${i}</span>
+                        <input type="text" placeholder="الاسم الرباعي" required name="name_${i}" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500">
+                        <input type="tel" placeholder="رقم الجوال (05xxxxxxxx)" required name="phone_${i}" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                `;
+            }
+        }
+
+        function handleCheckIn(event) {
+            event.preventDefault();
+            let count = parseInt(document.getElementById('groupSize').value);
+            let roomNo = document.getElementById('targetRoomSelect').value;
+            let room = globalRoomsData[roomNo];
+
+            let emptyIndices = [];
+            room.beds.forEach((b, idx) => { if(b === null) emptyIndices.push(idx); });
+
+            if (emptyIndices.length < count) {
+                alert('عذراً، الأسرة الشاغرة لا تكفي!');
+                return;
+            }
+
+            for (let i = 1; i <= count; i++) {
+                let name = event.target.elements[`name_${i}`].value;
+                let phone = event.target.elements[`phone_${i}`].value;
+                room.beds[emptyIndices[i-1]] = { name, phone };
+            }
+
+            dbRef.set(globalRoomsData);
+            closeModal('checkInModal');
+            event.target.reset();
+        }
+
+        function removeStudent(roomNo, bedIndex) {
+            if (confirm('هل أنت متأكد من إخلاء السرير؟')) {
+                let room = globalRoomsData[roomNo];
+                let studentName = room.beds[bedIndex]?.name;
+                if (room.keyHolder === studentName) room.keyHolder = 'reception';
+                room.beds[bedIndex] = null;
+                dbRef.set(globalRoomsData);
+            }
+        }
+
+        function setKey(roomNo, studentName) {
+            globalRoomsData[roomNo].keyHolder = studentName;
+            dbRef.set(globalRoomsData);
+        }
+
+        function returnKeyToReception(roomNo) {
+            globalRoomsData[roomNo].keyHolder = 'reception';
+            dbRef.set(globalRoomsData);
+        }
+
+        function openShareModal() {
+            document.getElementById('currentUrlInput').value = window.location.href;
+            document.getElementById('shareModal').classList.remove('hidden');
+        }
+
+        function copyUrl() {
+            navigator.clipboard.writeText(window.location.href);
+            alert('تم نسخ الرابط بنجاح!');
+        }
+
+        function resetData() {
+            if (confirm('تحذير: مسح جميع بيانات السكن؟')) {
+                let initialRooms = {};
+                for (let i = 1; i <= TOTAL_ROOMS; i++) {
+                    let roomNo = (100 + i).toString();
+                    initialRooms[roomNo] = { number: roomNo, beds: [null, null, null], keyHolder: 'reception' };
+                }
+                dbRef.set(initialRooms);
+            }
+        }
+    </script>
+</body>
+</html>
