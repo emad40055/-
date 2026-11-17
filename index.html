@@ -311,7 +311,30 @@ function downloadData(name,content,type){const a=document.createElement('a'),url
 function exportCSV(){const rows=[['رقم الغرفة','رقم السرير','اسم الطالب','الجوال','حالة المفتاح']];for(const r of roomList())r.beds.forEach((b,i)=>rows.push([r.number,i+1,b?.name||'',b?.phone||'',r.keyHolder==='reception'?'الاستقبال':r.keyHolder]));const csv='\uFEFF'+rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');downloadData('mutun-rooms.csv',csv,'text/csv;charset=utf-8');}
 function exportJSON(){downloadData('mutun-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({version:1,exportedAt:new Date().toISOString(),rooms:globalRoomsData},null,2),'application/json');}
 async function importJSON(event){const file=event.target.files?.[0];if(!file)return;try{const raw=JSON.parse(await file.text()),rooms=raw.rooms||raw;if(!rooms||Array.isArray(rooms)||typeof rooms!=='object'||!Object.values(rooms).every(r=>r&&/^\d+$/.test(String(r.number))&&Array.isArray(r.beds)&&r.beds.length===3&&r.beds.every(b=>b===null||typeof b.name==='string'&&typeof b.phone==='string')&&typeof r.keyHolder==='string'))throw Error('صيغة النسخة غير صحيحة');if(confirm('استيراد النسخة سيستبدل بيانات السكن الحالية. هل أنت متأكد؟'))await dbRef.set(rooms);}catch(e){alert('تعذر استيراد الملف: '+e.message);}finally{event.target.value='';}}
-async function updateRoomStructure(){const count=Number(document.getElementById('roomCountInput').value),start=Number(document.getElementById('firstRoomInput').value);if(!Number.isInteger(count)||count<1||count>1000||!Number.isInteger(start)||start<1)return alert('أدخل أرقام غرف صحيحة');const existing=globalRoomsData||{},next={};for(let i=0;i<count;i++){const id=String(start+i);next[id]=existing[id]||{number:id,beds:[null,null,null],keyHolder:'reception'};}const removed=Object.keys(existing).filter(id=>!next[id]);if(removed.some(id=>Object.values(existing[id]?.beds||{}).some(Boolean)))return alert('لا يمكن حذف غرف فيها طلاب. أخلِ الغرف أولاً.');if(removed.length&&!confirm('سيتم حذف '+removed.length+' غرفة غير مأهولة من الهيكل. متابعة؟'))return;await dbRef.transaction(current=>{if(!current)return;const updated={};for(const id of Object.keys(next))updated[id]=current[id]||next[id];if(Object.keys(current).some(id=>!updated[id]&&Object.values(current[id]?.beds||{}).some(Boolean)))return;return updated;});closeModal('settingsModal');}
+async function updateRoomStructure(){
+ const count=Number(document.getElementById('roomCountInput').value);
+ const start=Number(document.getElementById('firstRoomInput').value);
+ if(!Number.isInteger(count)||count<1||count>1000||!Number.isInteger(start)||start<1){alert('أدخل عدد الغرف ورقم أول غرفة بشكل صحيح');return;}
+ const requested=Array.from({length:count},(_,i)=>String(start+i));
+ try{
+  const result=await dbRef.transaction(current=>{
+   const existing=(current&&typeof current==='object')?current:{};
+   const updated={...existing};
+   for(const id of requested){
+    if(!Object.prototype.hasOwnProperty.call(updated,id))updated[id]={number:id,beds:[null,null,null],keyHolder:'reception'};
+   }
+   return updated;
+  },undefined,false);
+  if(!result.committed){alert('لم يتم تحديث الغرف. حاول مرة أخرى.');return;}
+  const actual=result.snapshot.val()||{};
+  const added=requested.filter(id=>Object.prototype.hasOwnProperty.call(actual,id)).length;
+  closeModal('settingsModal');
+  alert('تم تحديث هيكل الغرف بنجاح. عدد الغرف الإجمالي الآن: '+Object.keys(actual).length+' غرفة.');
+ }catch(error){
+  console.error('Room structure update failed:',error);
+  alert('تعذر حفظ الغرف في Firebase. تحقق من الاتصال وصلاحيات قاعدة البيانات ثم حاول مرة أخرى.');
+ }
+}
 async function clearRooms(){if(!confirm('تحذير: سيتم إخلاء جميع الطلاب وإرجاع المفاتيح للاستقبال. هل أنت متأكد؟'))return;if(!confirm('تأكيد نهائي: هل تريد تصفير جميع الغرف؟'))return;const next={};for(const r of roomList())next[r.number]={...r,beds:[null,null,null],keyHolder:'reception'};await dbRef.set(next);closeModal('settingsModal');}
 async function fillDemo(){if(roomList().some(r=>r.beds.some(Boolean)))return alert('لا يمكن إدخال بيانات تجريبية فوق بيانات الطلاب الحالية.');if(!confirm('إضافة بيانات تجريبية إلى أول ثلاث غرف؟'))return;const next=structuredClone(globalRoomsData);for(const [id,r] of Object.entries(next))r.beds=Array.from({length:3},(_,i)=>r.beds?.[i]||null);const ids=Object.keys(next).sort((a,b)=>Number(a)-Number(b));const names=['طالب تجريبي 1','طالب تجريبي 2','طالب تجريبي 3'];if(ids[0]){next[ids[0]].beds[0]={name:names[0],phone:'0500000000'};next[ids[0]].keyHolder=names[0];}if(ids[1]){next[ids[1]].beds[0]={name:names[1],phone:'0500000000'};next[ids[1]].beds[1]={name:names[2],phone:'0500000000'};}await dbRef.set(next);}
 function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});renderStudentInputs();document.getElementById('checkInModal').classList.remove('hidden');}
