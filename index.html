@@ -6,7 +6,6 @@
     <title>إدارة سكن دورة المتون</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <!-- استخدام Firebase لمزامنة البيانات سحابياً بين جميع المشرفين فوراً -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style> body { font-family: 'Cairo', sans-serif; } </style>
@@ -60,15 +59,16 @@
 
         <!-- البحث والفلترة -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-3 justify-between items-center">
-            <div class="w-full md:w-96 relative">
+            <div class="w-full md:w-80 relative">
                 <span class="absolute right-3 top-2.5 text-slate-400">🔍</span>
                 <input type="text" id="searchInput" oninput="renderApp()" placeholder="ابحث باسم الطالب، رقم الغرفة، أو الجوال..." class="w-full pr-10 pl-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
             </div>
             <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap">الكل</button>
-                <button onclick="setFilter('empty')" id="filter-empty" class="filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">غرف شاغرة</button>
-                <button onclick="setFilter('key-reception')" id="filter-key-reception" class="filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">المفتاح بالاستقبال</button>
-                <button onclick="resetData()" class="text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-sm transition">إعادة ضبط</button>
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white whitespace-nowrap">الكل</button>
+                <button onclick="setFilter('empty')" id="filter-empty" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">غرف شاغرة</button>
+                <button onclick="setFilter('key-reception')" id="filter-key-reception" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">المفتاح بالاستقبال</button>
+                <button onclick="promptChangeRoomsCount()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">⚙️ عدد الغرف</button>
+                <button onclick="resetData()" class="text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap">إعادة تهيئة</button>
             </div>
         </div>
 
@@ -129,37 +129,48 @@
     </div>
 
     <script>
-        // إعدادات الاتصال السحابي المجاني
         const firebaseConfig = {
             databaseURL: "https://mutun-sakan-default-rtdb.firebaseio.com/"
         };
         firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref('mutun_rooms_data');
+        const dbRef = firebase.database().ref('mutun_rooms_data_v3');
 
-        const TOTAL_ROOMS = 30;
         let currentFilter = 'all';
         let globalRoomsData = {};
 
-        // الاستماع للتحديثات السحابية الحية فورياً
         dbRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) {
-                // إنشاء البيانات أول مرة إذا كانت قاعدة البيانات فارغة
-                let initialRooms = {};
-                for (let i = 1; i <= TOTAL_ROOMS; i++) {
-                    let roomNo = (100 + i).toString();
-                    initialRooms[roomNo] = {
-                        number: roomNo,
-                        beds: [null, null, null],
-                        keyHolder: 'reception'
-                    };
-                }
-                dbRef.set(initialRooms);
+                generateRooms(100); // افتراضياً 100 غرفة
             } else {
                 globalRoomsData = data;
                 renderApp();
             }
         });
+
+        function generateRooms(count) {
+            let rooms = globalRoomsData || {};
+            for (let i = 1; i <= count; i++) {
+                let roomNo = (100 + i).toString();
+                if (!rooms[roomNo]) {
+                    rooms[roomNo] = {
+                        number: roomNo,
+                        beds: [null, null, null],
+                        keyHolder: 'reception'
+                    };
+                }
+            }
+            dbRef.set(rooms);
+        }
+
+        function promptChangeRoomsCount() {
+            let currentCount = Object.keys(globalRoomsData).length || 100;
+            let newCount = prompt("أدخل إجمالي عدد الغرف المطلوبة:", currentCount);
+            if (newCount !== null && !isNaN(newCount) && newCount > 0) {
+                generateRooms(parseInt(newCount));
+                alert("تم تحديث عدد الغرف بنجاح!");
+            }
+        }
 
         function renderApp() {
             let container = document.getElementById('roomsContainer');
@@ -168,6 +179,8 @@
 
             let totalBeds = 0, occupiedBeds = 0, emptyBeds = 0, keysAtReception = 0;
             let searchQuery = document.getElementById('searchInput').value.toLowerCase();
+
+            if (!globalRoomsData) return;
 
             Object.values(globalRoomsData).forEach(room => {
                 totalBeds += 3;
@@ -234,8 +247,8 @@
 
         function setFilter(filter) {
             currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.className = "filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600 whitespace-nowrap");
-            document.getElementById(`filter-${filter}`).className = "filter-btn px-4 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white whitespace-nowrap";
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.className = "filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap");
+            document.getElementById(`filter-${filter}`).className = "filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white whitespace-nowrap";
             renderApp();
         }
 
@@ -266,7 +279,7 @@
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
                         <span class="text-xs font-bold text-indigo-600 block">بيانات الطالب رقم ${i}</span>
                         <input type="text" placeholder="الاسم الرباعي" required name="name_${i}" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500">
-                        <input type="tel" placeholder="رقم الجوال (05xxxxxxxx)" required name="phone_${i}" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500">
+                        <input type="tel" placeholder="رقم الجوال (05xxxxxxxx)" required name="phone_${i}" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500">
                     </div>
                 `;
             }
@@ -328,13 +341,8 @@
         }
 
         function resetData() {
-            if (confirm('تحذير: مسح جميع بيانات السكن؟')) {
-                let initialRooms = {};
-                for (let i = 1; i <= TOTAL_ROOMS; i++) {
-                    let roomNo = (100 + i).toString();
-                    initialRooms[roomNo] = { number: roomNo, beds: [null, null, null], keyHolder: 'reception' };
-                }
-                dbRef.set(initialRooms);
+            if (confirm('تحذير: هل تريد مسح جميع البيانات وإعادة تعيين الغرف؟')) {
+                dbRef.remove().then(() => generateRooms(100));
             }
         }
     </script>
