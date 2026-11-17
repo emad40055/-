@@ -9,77 +9,23 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style> body { font-family: 'Cairo', sans-serif; } </style>
-</head>
+
+<style>
+:root{color-scheme:light}body{background:#f4f6fa!important;color:#172238}header{background:#0b101b!important}header>div,main{max-width:1320px!important}main{margin-top:20px!important}.metric{background:#fff;border:1px solid #e1e6ef;border-radius:16px;padding:16px;min-height:91px;box-shadow:0 2px 8px #15243b08}.metric small{display:block;font-size:12px;color:#697487;font-weight:700}.metric strong{display:block;font-size:24px;font-weight:900;margin-top:8px}.room-card{background:#fff;border:1px solid #dce3ec;border-radius:17px;padding:15px;min-height:230px;box-shadow:0 3px 9px #16233809;display:flex;flex-direction:column;gap:10px}.room-card.partial{border-color:#e8cb87}.room-card.full{border-color:#a8d7bf}.room-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.room-title{font-weight:900;font-size:14px}.pill{border-radius:7px;padding:3px 9px;font-size:11px;font-weight:800;white-space:nowrap}.pill.empty{background:#d9f4e4;color:#14633c}.pill.partial{background:#fff1c4;color:#865a00}.pill.full{background:#dbeafe;color:#1e40af}.bed-line{border:1px dashed #d7dee9;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:37px;font-size:12px}.bed-line.vacant{color:#8993a5;background:#fafbfc}.bed-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}.icon-btn{border:0;border-radius:7px;padding:4px 7px;cursor:pointer}.icon-btn:hover{background:#eaf0f9}.room-foot{border-top:1px solid #e7ebf2;padding-top:9px;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:11px;color:#59687c}.filter-btn{border-radius:9px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap;background:#eef2f7;color:#42526a}.filter-btn.active{background:#101827;color:#fff}.modal-panel{background:#fff;border-radius:24px;max-width:660px;width:100%;padding:25px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 75px #0003}.settings-section{border:1px solid #e2e8f0;border-radius:17px;padding:18px;margin-top:16px}.settings-section h4{font-weight:900;margin-bottom:14px}.field{border:1px solid #d9e1eb;border-radius:11px;padding:11px;width:100%;background:#fff}.action-btn{border-radius:11px;padding:11px 14px;font-weight:800;font-size:13px}.action-btn:disabled{opacity:.5;cursor:not-allowed}@media(max-width:640px){.metric{padding:12px;min-height:78px}.metric strong{font-size:20px}.modal-panel{padding:16px}.room-card{min-height:210px}} 
+</style></head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
-    <!-- شريط العلوى -->
-    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
-            <div class="flex items-center gap-3">
-                <span class="bg-indigo-700 p-2 rounded-xl text-xl">🏢</span>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight">سكن دورة المتون</h1>
-                    <p class="text-xs text-indigo-200">مزامنة سحابية حية للمشرفين</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                <button onclick="openShareModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition">
-                    🔗 مشاركة الرابط
-                </button>
-                <button onclick="openCheckInModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 transition shadow">
-                    ➕ تسكين وصول جديد
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- المحتوى الرئيسي -->
-    <main class="max-w-6xl mx-auto px-4 mt-6">
-
-        <!-- الإحصائيات -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <p class="text-xs text-slate-500 font-medium">إجمالي الأسرة</p>
-                <h3 id="statTotalBeds" class="text-2xl font-black text-slate-900 mt-1">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <p class="text-xs text-slate-500 font-medium">الطلاب المسكنون</p>
-                <h3 id="statOccupiedBeds" class="text-2xl font-black text-indigo-600 mt-1">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <p class="text-xs text-slate-500 font-medium">الأسرة الشاغرة</p>
-                <h3 id="statEmptyBeds" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                <p class="text-xs text-slate-500 font-medium">المفاتيح بالاستقبال</p>
-                <h3 id="statKeysReception" class="text-2xl font-black text-amber-600 mt-1">0</h3>
-            </div>
-        </div>
-
-        <!-- البحث والفلترة -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-3 justify-between items-center">
-            <div class="w-full md:w-80 relative">
-                <span class="absolute right-3 top-2.5 text-slate-400">🔍</span>
-                <input type="text" id="searchInput" oninput="renderApp()" placeholder="ابحث باسم الطالب، رقم الغرفة، أو الجوال..." class="w-full pr-10 pl-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
-            </div>
-            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white whitespace-nowrap">الكل</button>
-                <button onclick="setFilter('empty')" id="filter-empty" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">غرف شاغرة</button>
-                <button onclick="setFilter('key-reception')" id="filter-key-reception" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">المفتاح بالاستقبال</button>
-                <button onclick="promptChangeRoomsCount()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">⚙️ عدد الغرف</button>
-                <button onclick="resetData()" class="text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap">إعادة تهيئة</button>
-            </div>
-        </div>
-
-        <!-- شبكة الغرف -->
-        <div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- تُعبأ برمجياً -->
-        </div>
-
-    </main>
-
-    <!-- مودال التسكين -->
+    <header class="sticky top-0 z-40 text-white shadow-lg"><div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="bg-emerald-800 p-3 rounded-xl text-xl">🏢</span><div><h1 class="font-black text-lg">سكن دورة المتون <span class="text-emerald-500 text-xs mr-2">MUTUN-2026</span></h1><p class="text-xs text-slate-400">متصل ومتزامن لحظياً مع المشرفين</p></div></div><div class="flex items-center gap-2"><button onclick="openCheckInModal()" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-xl text-sm font-bold">＋ تسكين وصول جديد</button><button onclick="openShareModal()" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-xl text-sm font-bold">🔗 مشاركة الرابط</button><button onclick="openSettings()" title="الإعدادات" class="p-2 rounded-lg hover:bg-white/10">⚙️</button><span title="متصل بقاعدة البيانات" class="text-emerald-400 text-sm">●</span></div></div></header>
+<main class="max-w-6xl mx-auto px-4 pb-10"><div class="bg-white border border-slate-200 rounded-xl px-4 py-3 flex flex-wrap justify-between items-center gap-2 text-xs mb-4"><span id="recentActivity">🟢 متصل بقاعدة البيانات — آخر تحديث مباشر</span><button onclick="exportCSV()" class="text-blue-700 font-bold">السجل الكامل ←</button></div><div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+<div class="metric"><small>👤 الطلاب المسكنون</small><strong id="statOccupiedBeds" class="text-blue-700">0</strong><small id="statCapacity">من 300</small></div>
+<div class="metric"><small>🛏️ أسرة شاغرة</small><strong id="statEmptyBeds" class="text-green-700">0</strong><small>سرير</small></div>
+<div class="metric"><small>✅ غرف مكتملة (3/3)</small><strong id="statFullRooms" class="text-blue-700">0</strong><small>غرفة</small></div>
+<div class="metric"><small>🟡 غرف جزئية (1–2)</small><strong id="statPartialRooms" class="text-amber-700">0</strong><small>غرفة</small></div>
+<div class="metric"><small>🚪 غرف فارغة (0/3)</small><strong id="statEmptyRooms">0</strong><small>غرفة</small></div>
+<div class="metric"><small>🔑 المفاتيح المسلّمة</small><strong id="statKeysDelivered" class="text-orange-700">0</strong><small id="statKeysReception">بالاستقبال 0</small></div></div>
+<div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4"><div class="relative"><input id="searchInput" oninput="renderApp()" class="field !pr-10" placeholder="ابحث فوراً باسم الطالب، رقم الغرفة (مثلاً 105)، رقم الجوال، أو حامل المفتاح..."><span class="absolute right-3 top-3">🔍</span></div><div class="flex gap-2 overflow-x-auto mt-3 pb-1" id="filters"><button id="filter-all" class="filter-btn active" onclick="setFilter('all')">الكل</button><button id="filter-empty" class="filter-btn" onclick="setFilter('empty')">🟢 بها أسرة شاغرة</button><button id="filter-partial" class="filter-btn" onclick="setFilter('partial')">🟡 متاحة جزئياً</button><button id="filter-full" class="filter-btn" onclick="setFilter('full')">🔵 مكتملة 3/3</button><button id="filter-vacant" class="filter-btn" onclick="setFilter('vacant')">⚪ فارغة 0/3</button><button id="filter-key-student" class="filter-btn" onclick="setFilter('key-student')">🔑 مفتاح مع طالب</button><button id="filter-key-reception" class="filter-btn" onclick="setFilter('key-reception')">🏢 مفتاح بالاستقبال</button></div></div>
+<div class="flex items-center justify-between mb-3 text-sm font-bold"><span id="visibleCount">الغرف المعروضة</span><span class="text-slate-500 text-xs">اضغط على سرير شاغر للتسكين</span></div><div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div></main>
+<!-- مودال التسكين -->
     <div id="checkInModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -128,6 +74,7 @@
         </div>
     </div>
 
+<div id="settingsModal" class="fixed inset-0 bg-slate-950/65 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4"><div class="modal-panel"><div class="flex justify-between items-center"><h3 class="text-xl font-black">⚙️ إعدادات السكن والتصدير</h3><button onclick="closeModal('settingsModal')" class="text-slate-500 text-2xl" aria-label="إغلاق">×</button></div><div class="settings-section bg-slate-50"><h4>🏢 إعدادات الغرف</h4><div class="grid grid-cols-2 gap-3"><label class="text-xs font-bold">عدد الغرف الإجمالي<input id="roomCountInput" type="number" min="1" max="1000" class="field mt-2"></label><label class="text-xs font-bold">رقم أول غرفة<input id="firstRoomInput" type="number" min="1" class="field mt-2"></label></div><button onclick="updateRoomStructure()" class="action-btn bg-slate-950 text-white w-full mt-3">تحديث هيكل الغرف</button><p class="text-xs text-slate-500 mt-2">تقليل عدد الغرف لا يحذف غرفاً مأهولة دون تأكيد.</p></div><div class="settings-section bg-blue-50/40"><h4>💾 تصدير الكشوفات والنسخ الاحتياطية</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="exportCSV()" class="action-btn bg-green-700 text-white">📊 تصدير إلى Excel (CSV)</button><button onclick="exportJSON()" class="action-btn bg-blue-700 text-white">☁️ حفظ نسخة احتياطية (JSON)</button></div><label class="action-btn block text-center border border-slate-300 bg-white mt-3 cursor-pointer">📥 استيراد نسخة احتياطية من ملف (JSON)<input type="file" accept=".json,application/json" class="hidden" onchange="importJSON(event)"></label></div><div class="settings-section bg-slate-50"><h4>🛠️ أدوات المعاينة والتصفير</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><button onclick="fillDemo()" class="action-btn bg-amber-100 text-amber-900">✨ تعبئة بيانات تجريبية</button><button onclick="clearRooms()" class="action-btn bg-red-100 text-red-800">⚠️ تصفير جميع الغرف</button></div></div></div></div>
     <script>
         const firebaseConfig = {
             databaseURL: "https://mutun-sakan-default-rtdb.firebaseio.com/"
@@ -346,5 +293,29 @@
             }
         }
     </script>
-</body>
+
+<script>
+const safeText = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function roomList(){return Object.values(globalRoomsData||{}).filter(r=>r&&r.number&&Array.isArray(r.beds)).sort((a,b)=>Number(a.number)-Number(b.number));}
+function openSettings(){const rooms=roomList();document.getElementById('roomCountInput').value=rooms.length||100;document.getElementById('firstRoomInput').value=rooms.length?Math.min(...rooms.map(r=>Number(r.number))):101;document.getElementById('settingsModal').classList.remove('hidden');}
+function setFilter(f){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.id==='filter-'+f));renderApp();}
+function renderApp(){
+ const rooms=roomList(),search=(document.getElementById('searchInput')?.value||'').trim().toLowerCase();let occupied=0,full=0,partial=0,vacant=0,delivered=0;
+ for(const r of rooms){const n=r.beds.filter(Boolean).length;occupied+=n;if(n===3)full++;else if(n===0)vacant++;else partial++;if(r.keyHolder!=='reception')delivered++;}
+ const stats={statOccupiedBeds:occupied,statEmptyBeds:rooms.length*3-occupied,statFullRooms:full,statPartialRooms:partial,statEmptyRooms:vacant,statKeysDelivered:delivered};for(const [id,n] of Object.entries(stats))document.getElementById(id).textContent=n;document.getElementById('statCapacity').textContent='من '+rooms.length*3;document.getElementById('statKeysReception').textContent='بالاستقبال '+(rooms.length-delivered);
+ const shown=rooms.filter(r=>{const n=r.beds.filter(Boolean).length;const match=[r.number,r.keyHolder,...r.beds.flatMap(b=>b?[b.name,b.phone]:[])].some(v=>String(v||'').toLowerCase().includes(search));return match&&(currentFilter==='all'||currentFilter==='empty'&&n<3||currentFilter==='partial'&&n>0&&n<3||currentFilter==='full'&&n===3||currentFilter==='vacant'&&n===0||currentFilter==='key-student'&&r.keyHolder!=='reception'||currentFilter==='key-reception'&&r.keyHolder==='reception');});
+ document.getElementById('visibleCount').textContent='الغرف المعروضة ('+shown.length+' غرفة)';
+ document.getElementById('roomsContainer').innerHTML=shown.map(r=>{const n=r.beds.filter(Boolean).length,cls=n===3?'full':n===0?'empty':'partial';const badge=n===3?'مكتملة 3/3':n===0?'فارغة 0/3':'متاح '+(3-n)+' سرير ('+n+'/3)';const beds=r.beds.map((b,i)=>b?`<div class="bed-line"><div class="min-w-0"><b>❶ ${i+1}. ${safeText(b.name)}</b><a class="block text-blue-700" href="tel:${encodeURIComponent(b.phone||'')}">📞 ${safeText(b.phone)}</a></div><div class="bed-actions"><button class="icon-btn" title="تسليم المفتاح" data-action="key" data-room="${safeText(r.number)}" data-bed="${i}">🔑</button><button class="icon-btn text-red-600" title="إخلاء السرير" data-action="remove" data-room="${safeText(r.number)}" data-bed="${i}">✕</button></div></div>`:`<button class="bed-line vacant w-full text-right" data-action="checkin" data-room="${safeText(r.number)}"><span>◯ ${i+1}. سرير شاغر (اضغط للتسكين)</span><span>＋</span></button>`).join('');
+ return `<article class="room-card ${cls}"><div class="room-head"><span class="room-title">غرفة ${safeText(r.number)}</span><span class="pill ${cls}">${badge}</span></div><div class="space-y-2">${beds}</div><div class="room-foot"><span>🏢 المفتاح: ${r.keyHolder==='reception'?'في الاستقبال': 'مع '+safeText(r.keyHolder)}</span>${r.keyHolder!=='reception'?`<button class="text-amber-800 font-bold" data-action="return" data-room="${safeText(r.number)}">إرجاع للاستقبال</button>`:''}</div></article>`;}).join('');
+}
+document.getElementById('roomsContainer').addEventListener('click',e=>{const btn=e.target.closest('[data-action]');if(!btn)return;const id=btn.dataset.room,r=globalRoomsData[id];if(!r)return;const action=btn.dataset.action;if(action==='checkin'){openCheckInModal();document.getElementById('targetRoomSelect').value=id;}if(action==='key'){const b=r.beds[Number(btn.dataset.bed)];if(b)setKey(id,b.name);}if(action==='remove')removeStudent(id,Number(btn.dataset.bed));if(action==='return')returnKeyToReception(id);});
+function downloadData(name,content,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+function exportCSV(){const rows=[['رقم الغرفة','رقم السرير','اسم الطالب','الجوال','حالة المفتاح']];for(const r of roomList())r.beds.forEach((b,i)=>rows.push([r.number,i+1,b?.name||'',b?.phone||'',r.keyHolder==='reception'?'الاستقبال':r.keyHolder]));const csv='\uFEFF'+rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');downloadData('mutun-rooms.csv',csv,'text/csv;charset=utf-8');}
+function exportJSON(){downloadData('mutun-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({version:1,exportedAt:new Date().toISOString(),rooms:globalRoomsData},null,2),'application/json');}
+async function importJSON(event){const file=event.target.files?.[0];if(!file)return;try{const raw=JSON.parse(await file.text()),rooms=raw.rooms||raw;if(!rooms||Array.isArray(rooms)||typeof rooms!=='object'||!Object.values(rooms).every(r=>r&&/^\d+$/.test(String(r.number))&&Array.isArray(r.beds)&&r.beds.length===3&&r.beds.every(b=>b===null||typeof b.name==='string'&&typeof b.phone==='string')&&typeof r.keyHolder==='string'))throw Error('صيغة النسخة غير صحيحة');if(confirm('استيراد النسخة سيستبدل بيانات السكن الحالية. هل أنت متأكد؟'))await dbRef.set(rooms);}catch(e){alert('تعذر استيراد الملف: '+e.message);}finally{event.target.value='';}}
+async function updateRoomStructure(){const count=Number(document.getElementById('roomCountInput').value),start=Number(document.getElementById('firstRoomInput').value);if(!Number.isInteger(count)||count<1||count>1000||!Number.isInteger(start)||start<1)return alert('أدخل أرقام غرف صحيحة');const existing=globalRoomsData||{},next={};for(let i=0;i<count;i++){const id=String(start+i);next[id]=existing[id]||{number:id,beds:[null,null,null],keyHolder:'reception'};}const removed=Object.keys(existing).filter(id=>!next[id]);if(removed.some(id=>existing[id]?.beds?.some(Boolean)))return alert('لا يمكن حذف غرف فيها طلاب. أخلِ الغرف أولاً.');if(removed.length&&!confirm('سيتم حذف '+removed.length+' غرفة غير مأهولة من الهيكل. متابعة؟'))return;await dbRef.set(next);closeModal('settingsModal');}
+async function clearRooms(){if(!confirm('تحذير: سيتم إخلاء جميع الطلاب وإرجاع المفاتيح للاستقبال. هل أنت متأكد؟'))return;if(!confirm('تأكيد نهائي: هل تريد تصفير جميع الغرف؟'))return;const next={};for(const r of roomList())next[r.number]={...r,beds:[null,null,null],keyHolder:'reception'};await dbRef.set(next);closeModal('settingsModal');}
+async function fillDemo(){if(roomList().some(r=>r.beds.some(Boolean)))return alert('لا يمكن إدخال بيانات تجريبية فوق بيانات الطلاب الحالية.');if(!confirm('إضافة بيانات تجريبية إلى أول ثلاث غرف؟'))return;const next=structuredClone(globalRoomsData);const ids=Object.keys(next).sort((a,b)=>Number(a)-Number(b));const names=['طالب تجريبي 1','طالب تجريبي 2','طالب تجريبي 3'];if(ids[0]){next[ids[0]].beds[0]={name:names[0],phone:'0500000000'};next[ids[0]].keyHolder=names[0];}if(ids[1]){next[ids[1]].beds[0]={name:names[1],phone:'0500000000'};next[ids[1]].beds[1]={name:names[2],phone:'0500000000'};}await dbRef.set(next);}
+function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});renderStudentInputs();document.getElementById('checkInModal').classList.remove('hidden');}
+</script></body>
 </html>
