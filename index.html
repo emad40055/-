@@ -372,6 +372,7 @@ async function reduceRoomCount(){
   if(!confirm('سيتم حذف '+numbers.length+' غرفة من أعلى الأرقام: '+numbers.join('، ')+'\nسيصبح العدد '+target+' غرفة. هل أنت متأكد؟'))return;
   const {data:deleted,error}=await sb.from('rooms').delete().in('room_number',numbers).eq('key_holder','reception').select('room_number');
   if(error)throw error;
+  if(deleted.length)signalSakanChange();
   await loadRooms();
   if(deleted.length!==numbers.length){status.textContent='تم حذف '+deleted.length+' غرفة فقط؛ قد تكون بعض الغرف تغيّرت أثناء العملية. راجع العدد الحالي.';return;}
   status.textContent='تم التنقيص بنجاح. العدد الحالي: '+roomList().length+' غرفة.';
