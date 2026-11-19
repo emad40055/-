@@ -61,6 +61,17 @@ main{margin-top:24px!important}
 <div class="metric"><small>🔑 المفاتيح المسلّمة</small><strong id="statKeysDelivered" class="text-orange-700">0</strong><small id="statKeysReception">بالاستقبال 0</small></div></div>
 <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4"><div class="relative"><input id="searchInput" oninput="renderApp()" class="field !pr-10" placeholder="ابحث فوراً باسم الطالب، رقم الغرفة (مثلاً 105)، رقم الجوال، أو حامل المفتاح..."><span class="absolute right-3 top-3">🔍</span></div><div class="flex gap-2 overflow-x-auto mt-3 pb-1" id="filters"><button id="filter-all" class="filter-btn active" onclick="setFilter('all')">الكل</button><button id="filter-empty" class="filter-btn" onclick="setFilter('empty')">🟢 بها أسرة شاغرة</button><button id="filter-partial" class="filter-btn" onclick="setFilter('partial')">🟡 متاحة جزئياً</button><button id="filter-full" class="filter-btn" onclick="setFilter('full')">🔵 مكتملة 3/3</button><button id="filter-vacant" class="filter-btn" onclick="setFilter('vacant')">⚪ فارغة 0/3</button><button id="filter-key-student" class="filter-btn" onclick="setFilter('key-student')">🔑 مفتاح مع طالب</button><button id="filter-key-reception" class="filter-btn" onclick="setFilter('key-reception')">🏢 مفتاح بالاستقبال</button></div></div>
 <div class="flex items-center justify-between mb-3 text-sm font-bold"><span id="visibleCount">الغرف المعروضة</span><span class="text-slate-500 text-xs">اضغط على سرير شاغر للتسكين</span></div><div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div></main>
+<!-- نافذة نقل الطالب -->
+<div id="moveStudentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="moveStudentTitle">
+ <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+  <div class="flex items-center justify-between gap-3 mb-4"><h3 id="moveStudentTitle" class="text-lg font-bold text-slate-900">↔ نقل الطالب</h3><button type="button" onclick="closeModal('moveStudentModal')" class="text-slate-500 text-xl font-bold" aria-label="إغلاق">✕</button></div>
+  <p id="moveStudentDescription" class="text-sm text-slate-600 mb-3"></p>
+  <input id="moveRoomSearch" type="search" class="field w-full mb-3" placeholder="ابحث عن رقم الغرفة" oninput="filterMoveRooms()" aria-label="البحث عن غرفة"/>
+  <div id="moveRoomChoices" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[45vh] overflow-y-auto"></div>
+  <p id="moveStudentError" class="text-sm text-red-700 mt-3" role="alert"></p>
+  <button type="button" onclick="closeModal('moveStudentModal')" class="action-btn bg-slate-100 text-slate-700 w-full mt-4">إلغاء</button>
+ </div>
+</div>
 <!-- مودال التسكين -->
     <div id="checkInModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -251,24 +262,64 @@ main{margin-top:24px!important}
         function normalizedRoom(room,id){return {...room,number:String(room.number||id),beds:Array.from({length:3},(_,i)=>room.beds?.[i]||null),keyHolder:room.keyHolder||'reception'};}
 async function callSakan(fn,args){const {error}=await sb.rpc(fn,args);if(error){alert('فشل الحفظ: '+error.message);await loadRooms();return false;}signalSakanChange();await loadRooms();return true;}
 async function handleCheckIn(event){event.preventDefault();const f=event.target,count=Number(document.getElementById('groupSize').value),roomNo=Number(document.getElementById('targetRoomSelect').value);const students=Array.from({length:count},(_,i)=>({name:String(f.elements['name_'+(i+1)]?.value||'').trim(),phone:String(f.elements['phone_'+(i+1)]?.value||'').trim()}));if(!roomNo||students.some(x=>!x.name||!x.phone))return alert('أكمل البيانات');await loadRooms();const vacant=globalRoomsData[roomNo]?.beds.map((b,i)=>b?0:i+1).filter(Boolean)||[];if(vacant.length<count)return alert('الأسرة المتاحة غير كافية');let done=0;for(let i=0;i<count;i++){if(!await callSakan('sakan_safe_check_in',{p_room:roomNo,p_bed:vacant[i],p_name:students[i].name,p_phone:students[i].phone}))break;done++;}if(done===count){closeModal('checkInModal');f.reset();}else if(done)alert('تم تسكين '+done+' من '+count+'؛ راجع الغرفة.');}
+let moveStudentState=null;
 async function openMoveStudent(roomNo,bedIndex){
- await loadRooms();
- const student=globalRoomsData[roomNo]?.beds[bedIndex];
- if(!student)return alert('الطالب لم يعد في هذا السرير. حاول مجددًا.');
- const available=roomList().flatMap(r=>r.beds.map((b,i)=>b?null:{room:String(r.number),bed:i+1}).filter(Boolean));
- if(!available.length)return alert('لا توجد أسرة شاغرة للنقل');
- const roomInput=prompt('نقل '+student.name+'\\nاختر رقم الغرفة الجديدة من: '+[...new Set(available.map(x=>x.room))].join('، '),available[0].room);
- if(roomInput===null)return;
- const slots=available.filter(x=>x.room===roomInput.trim());
- if(!slots.length)return alert('الغرفة المختارة ممتلئة أو غير موجودة');
- const bedInput=slots.length===1?String(slots[0].bed):prompt('اختر رقم السرير الشاغر: '+slots.map(x=>x.bed).join('، '),String(slots[0].bed));
- if(bedInput===null)return;
- const bed=Number(bedInput);
- if(!slots.some(x=>x.bed===bed))return alert('السرير غير متاح');
- if(!confirm('تأكيد نقل '+student.name+' إلى الغرفة '+roomInput+'، سرير '+bed+'؟'))return;
- const {error}=await sb.rpc('sakan_move_student',{p_student_id:student.id,p_room:Number(roomInput),p_bed:bed});
- if(error){alert('تعذر نقل الطالب: '+error.message);await loadRooms();return;}
- signalSakanChange();await loadRooms();alert('تم نقل الطالب بنجاح');
+ const modal=document.getElementById('moveStudentModal');
+ const choices=document.getElementById('moveRoomChoices');
+ const errorBox=document.getElementById('moveStudentError');
+ document.getElementById('moveRoomSearch').value='';
+ errorBox.textContent='';
+ choices.innerHTML='<p class="text-slate-500 col-span-full">جاري تحميل الغرف...</p>';
+ modal.classList.remove('hidden');
+ try{
+  await loadRooms();
+  const student=globalRoomsData[roomNo]?.beds[bedIndex];
+  if(!student){errorBox.textContent='الطالب لم يعد في هذا السرير. حاول مجددًا.';choices.innerHTML='';return;}
+  const available=roomList().filter(r=>String(r.number)!==String(roomNo)).map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
+  moveStudentState={student,fromRoom:String(roomNo),available};
+  document.getElementById('moveStudentDescription').textContent='نقل '+student.name+' من الغرفة '+roomNo+' — اختر الغرفة الجديدة، وسيتم اختيار سرير شاغر تلقائيًا.';
+  filterMoveRooms();
+ }catch(e){choices.innerHTML='';errorBox.textContent='تعذر تحميل الغرف: '+e.message;}
+}
+function filterMoveRooms(){
+ const choices=document.getElementById('moveRoomChoices');
+ if(!moveStudentState){choices.innerHTML='';return;}
+ const q=document.getElementById('moveRoomSearch').value.trim();
+ const available=moveStudentState.available.filter(r=>r.room.includes(q));
+ choices.innerHTML='';
+ if(!available.length){choices.textContent='لا توجد غرف شاغرة مطابقة';return;}
+ available.forEach(r=>{
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-4 text-center font-bold text-blue-800 focus-visible:outline-2 focus-visible:outline-blue-600';
+  button.textContent='غرفة '+r.room+' ('+r.beds.length+' شاغر)';
+  button.addEventListener('click',()=>confirmMoveStudent(r.room));
+  choices.appendChild(button);
+ });
+}
+async function confirmMoveStudent(targetRoom){
+ const state=moveStudentState;
+ if(!state)return;
+ const choice=state.available.find(r=>r.room===String(targetRoom));
+ if(!choice||!choice.beds.length)return;
+ const bed=choice.beds[0];
+ if(!confirm('نقل '+state.student.name+' إلى الغرفة '+targetRoom+'؟ سيتم اختيار السرير الشاغر تلقائيًا.'))return;
+ const errorBox=document.getElementById('moveStudentError');
+ errorBox.textContent='';
+ const choices=document.getElementById('moveRoomChoices');
+ choices.querySelectorAll('button').forEach(b=>b.disabled=true);
+ try{
+  const {error}=await sb.rpc('sakan_move_student',{p_student_id:state.student.id,p_room:Number(targetRoom),p_bed:bed});
+  if(error)throw error;
+  moveStudentState=null;
+  closeModal('moveStudentModal');
+  signalSakanChange();
+  await loadRooms();
+  alert('تم نقل الطالب إلى الغرفة '+targetRoom+' بنجاح');
+ }catch(e){
+  errorBox.textContent='تعذر النقل: '+e.message;
+  choices.querySelectorAll('button').forEach(b=>b.disabled=false);
+ }
 }
 async function removeStudent(roomNo,bedIndex){if(confirm('تأكيد إخلاء السرير؟'))await callSakan('sakan_check_out',{p_room:Number(roomNo),p_bed:bedIndex+1});}
 async function setKey(roomNo,studentName){const student=globalRoomsData[roomNo]?.beds.find(b=>b?.name===studentName);if(student)await callSakan('sakan_give_key',{p_room:Number(roomNo),p_student_id:student.id});}
