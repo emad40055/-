@@ -479,7 +479,17 @@ async function reduceRoomCount(){
  }catch(e){status.textContent='تعذر التنقيص: '+e.message+'؛ لم يُحذف سجل الطلاب.';}
  finally{button.disabled=false;}
 }
-async function clearRooms(){if(!confirm('سيتم إخلاء جميع الطلاب، هل أنت متأكد؟')||!confirm('تأكيد نهائي؟'))return;for(const r of roomList()){for(let i=0;i<r.beds.length;i++)if(r.beds[i]&&!await callSakan('sakan_check_out',{p_room:Number(r.number),p_bed:i+1}))return;if(r.keyHolder!=='reception'&&!await callSakan('sakan_return_key',{p_room:Number(r.number)}))return;}await loadRooms();closeModal('settingsModal');}
+async function clearRooms(){
+ if(!ready)return alert('سجّل الدخول أولاً');
+ const password=prompt('🔒 أدخل كلمة المرور الخاصة بتصفير جميع الغرف:');
+ if(password===null)return;
+ if(!password)return alert('كلمة المرور مطلوبة');
+ if(!confirm('تحذير: سيتم إخلاء جميع الطلاب وإرجاع المفاتيح للاستقبال. هل أنت متأكد؟'))return;
+ if(!confirm('تأكيد أخير: هل تريد تصفير جميع الغرف الآن؟'))return;
+ const {error}=await sb.rpc('sakan_owner_reset',{p_password:password});
+ if(error){alert('لم يتم التصفير: '+error.message);return;}
+ signalSakanChange();await loadRooms();closeModal('settingsModal');alert('تم تصفير جميع الغرف بنجاح');
+}
 async function fillDemo(){if(roomList().some(r=>r.beds.some(Boolean)))return alert('يوجد طلاب مسكنون');if(!confirm('إضافة ثلاثة طلاب تجريبيين؟'))return;const rooms=roomList();for(let i=0;i<3;i++){const r=rooms[Math.floor(i/2)];if(!r)break;if(!await callSakan('sakan_safe_check_in',{p_room:Number(r.number),p_bed:i%2+1,p_name:'طالب تجريبي '+(i+1),p_phone:'0500000000'}))break;}}
 function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().filter(r=>String(r.number)!=='1409').forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});renderStudentInputs();document.getElementById('checkInModal').classList.remove('hidden');}
 </script></body>
