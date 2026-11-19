@@ -374,6 +374,7 @@ async function exportSakanExcel(){
    for(const student of room.beds){
     const row=sheet.addRow([Number(room.number),student?.name||'',student?.phone?String(student.phone):'']);
     row.getCell(3).numFmt='@';
+    row.eachCell({includeEmpty:true},cell=>{cell.alignment={horizontal:'center',vertical:'middle'};});
    }
   }
   const bytes=await wb.xlsx.writeBuffer();
