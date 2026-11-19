@@ -388,6 +388,28 @@ function renderApp(){
 }
 document.getElementById('roomsContainer').addEventListener('click',e=>{const btn=e.target.closest('[data-action]');if(!btn)return;const id=btn.dataset.room,r=globalRoomsData[id];if(!r)return;r.beds=Array.from({length:r.capacity||r.beds?.length||3},(_,i)=>r.beds?.[i]||null);const action=btn.dataset.action;if(action==='checkin'){openCheckInModal();document.getElementById('targetRoomSelect').value=id;}if(action==='key'){const b=r.beds[Number(btn.dataset.bed)];if(b)setKey(id,b.name);}if(action==='move')openMoveStudent(id,Number(btn.dataset.bed));if(action==='remove')removeStudent(id,Number(btn.dataset.bed));if(action==='return')returnKeyToReception(id);});
 function downloadData(name,content,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+async function printSakanList(mode){
+ if(!ready)return alert('سجل الدخول أولاً');
+ await loadRooms();
+ const rooms=roomList();
+ const occupied=rooms.filter(r=>r.beds.some(Boolean));
+ if(!occupied.length)return alert('لا يوجد طلاب مسكنون للطباعة');
+ const esc=v=>safeText(String(v??''));
+ const style='@page{size:A4 portrait;margin:14mm}*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;color:#172033;direction:rtl;margin:0}h1,h2,p{text-align:center}h1{font-size:25px;margin:12px 0 5px}h2{font-size:20px;margin:8px 0 24px}.sub{color:#64748b;font-size:13px;margin-bottom:24px}table{width:100%;border-collapse:collapse;direction:rtl}th,td{border:1px solid #cbd5e1;padding:12px 9px;text-align:right;font-size:15px}th{background:#edf2f7}.door{page-break-after:always;break-after:page;min-height:245mm;padding-top:22mm}.door:last-child{page-break-after:auto;break-after:auto}.number{font-size:68px;font-weight:900;text-align:center;margin:16px 0 34px}.door td,.door th{padding:20px;font-size:20px}.general tr{break-inside:avoid}.general thead{display:table-header-group}@media screen{body{max-width:900px;margin:20px auto;padding:12px}.door{border-bottom:2px dashed #ddd}}';
+ let body='';
+ if(mode==='general'){
+  const rows=occupied.flatMap(r=>r.beds.flatMap(b=>b?[{room:r.number,name:b.name}]:[]));
+  body='<h1>سكن دورة المتون</h1><h2>كشف توزيع الطلاب حسب الغرف</h2><p class="sub">عدد الطلاب: '+rows.length+' — عدد الغرف المشغولة: '+occupied.length+'</p><table class="general"><thead><tr><th>رقم الغرفة</th><th>اسم الطالب</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.room)+'</td><td>'+esc(x.name)+'</td></tr>').join('')+'</tbody></table>';
+ }else{
+  body=occupied.map(r=>'<section class="door"><h1>سكن دورة المتون</h1><h2>كشف ساكني الغرفة</h2><p class="sub">رقم الغرفة</p><div class="number">'+esc(r.number)+'</div><table><thead><tr><th>السرير</th><th>اسم الطالب</th></tr></thead><tbody>'+r.beds.map((b,i)=>'<tr><td>'+ (i+1) +'</td><td>'+ (b?esc(b.name):'شاغر') +'</td></tr>').join('')+'</tbody></table></section>').join('');
+ }
+ const win=window.open('','_blank');
+ if(!win)return alert('اسمح بالنوافذ المنبثقة لهذا الموقع للطباعة');
+ win.document.open();win.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف سكن دورة المتون</title><style>'+style+'</style></head><body>'+body+'</body></html>');win.document.close();win.focus();
+ win.addEventListener('load',()=>{win.print();},{once:true});
+}
+function exportJSON(){downloadData('mutun-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({version:1,exportedAt:new Date().toISOString(),rooms:globalRoomsData},null,2),'application/json');}
+async function importJSON(event){alert('الاستيراد متوقف مؤقتاً في النسخة التجريبية لحماية البيانات.');event.target.value='';}
 async function updateRoomStructure(){
  const button=document.getElementById('updateRoomsButton'),status=document.getElementById('updateRoomsStatus');
  const roomNumber=Number(document.getElementById('firstRoomInput').value);
