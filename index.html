@@ -275,7 +275,7 @@ async function openMoveStudent(roomNo,bedIndex){
   await loadRooms();
   const student=globalRoomsData[roomNo]?.beds[bedIndex];
   if(!student){errorBox.textContent='الطالب لم يعد في هذا السرير. حاول مجددًا.';choices.innerHTML='';return;}
-  const available=roomList().filter(r=>String(r.number)!==String(roomNo)).map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
+  const available=roomList().filter(r=>String(r.number)!==String(roomNo)&&String(r.number)!=='1409').map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
   moveStudentState={student,fromRoom:String(roomNo),available};
   document.getElementById('moveStudentDescription').textContent='نقل '+student.name+' من الغرفة '+roomNo+' — اختر الغرفة الجديدة، وسيتم اختيار سرير شاغر تلقائيًا.';
   filterMoveRooms();
@@ -311,7 +311,7 @@ async function confirmMoveStudent(targetRoom){
   const freeBeds=target?.beds.map((b,i)=>b?null:i+1).filter(Boolean)||[];
   if(!freeBeds.length){
    errorBox.textContent='الغرفة '+targetRoom+' ممتلئة الآن. اختر غرفة أخرى.';
-   moveStudentState.available=roomList().filter(r=>String(r.number)!==state.fromRoom).map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
+   moveStudentState.available=roomList().filter(r=>String(r.number)!==state.fromRoom&&String(r.number)!=='1409').map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
    filterMoveRooms();
    return;
   }
@@ -462,6 +462,6 @@ async function reduceRoomCount(){
 }
 async function clearRooms(){if(!confirm('سيتم إخلاء جميع الطلاب، هل أنت متأكد؟')||!confirm('تأكيد نهائي؟'))return;for(const r of roomList()){for(let i=0;i<r.beds.length;i++)if(r.beds[i]&&!await callSakan('sakan_check_out',{p_room:Number(r.number),p_bed:i+1}))return;if(r.keyHolder!=='reception'&&!await callSakan('sakan_return_key',{p_room:Number(r.number)}))return;}await loadRooms();closeModal('settingsModal');}
 async function fillDemo(){if(roomList().some(r=>r.beds.some(Boolean)))return alert('يوجد طلاب مسكنون');if(!confirm('إضافة ثلاثة طلاب تجريبيين؟'))return;const rooms=roomList();for(let i=0;i<3;i++){const r=rooms[Math.floor(i/2)];if(!r)break;if(!await callSakan('sakan_safe_check_in',{p_room:Number(r.number),p_bed:i%2+1,p_name:'طالب تجريبي '+(i+1),p_phone:'0500000000'}))break;}}
-function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});renderStudentInputs();document.getElementById('checkInModal').classList.remove('hidden');}
+function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().filter(r=>String(r.number)!=='1409').forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});renderStudentInputs();document.getElementById('checkInModal').classList.remove('hidden');}
 </script></body>
 </html>
