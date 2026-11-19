@@ -368,15 +368,19 @@ async function exportSakanExcel(){
   sheet.columns=[{width:25.125},{width:37.125},{width:36.75}];
   sheet.addRow(['رقم الغرفة ','اسم الطالب ',' رقم الجوال ']);
   const header=sheet.getRow(1);header.height=20.25;
-  header.eachCell(cell=>{cell.font={name:'Arial',size:16,bold:false};cell.alignment={horizontal:'center'};});
+  header.eachCell(cell=>{cell.font={name:'Arial',size:16,bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF176B60'}};cell.alignment={horizontal:'center',vertical:'middle'};cell.border={top:{style:'thin',color:{argb:'FFB8C8C5'}},bottom:{style:'medium',color:{argb:'FF0C5049'}},left:{style:'thin',color:{argb:'FFB8C8C5'}},right:{style:'thin',color:{argb:'FFB8C8C5'}}};});
   const rooms=roomList().sort((a,b)=>Number(a.number)-Number(b.number));
   for(const room of rooms){
    for(const student of room.beds){
     const row=sheet.addRow([Number(room.number),student?.name||'',student?.phone?String(student.phone):'']);
     row.getCell(3).numFmt='@';
-    row.eachCell({includeEmpty:true},cell=>{cell.alignment={horizontal:'center',vertical:'middle'};});
+    row.height=23;
+    row.eachCell({includeEmpty:true},cell=>{cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};cell.font={name:'Arial',size:12,color:{argb:'FF243347'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:row.number%2===0?'FFF0F7F5':'FFFFFFFF'}};cell.border={top:{style:'thin',color:{argb:'FFD6E1DE'}},bottom:{style:'thin',color:{argb:'FFD6E1DE'}},left:{style:'thin',color:{argb:'FFD6E1DE'}},right:{style:'thin',color:{argb:'FFD6E1DE'}}};});
    }
   }
+  sheet.autoFilter={from:'A1',to:'C'+sheet.rowCount};
+  sheet.getRow(1).height=31;
+  sheet.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0};
   const bytes=await wb.xlsx.writeBuffer();
   downloadData('كشف_سكن_الطلاب.xlsx',bytes,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
  }catch(e){alert('تعذر تحميل ملف Excel: '+e.message);}finally{btn.disabled=false;btn.textContent=old;}
