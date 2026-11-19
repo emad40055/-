@@ -263,7 +263,20 @@ main{margin-top:24px!important}
 
         function normalizedRoom(room,id){return {...room,number:String(room.number||id),beds:Array.from({length:room.capacity||room.beds?.length||3},(_,i)=>room.beds?.[i]||null),keyHolder:room.keyHolder||'reception'};}
 async function callSakan(fn,args){const {error}=await sb.rpc(fn,args);if(error){alert('فشل الحفظ: '+error.message);await loadRooms();return false;}signalSakanChange();await loadRooms();return true;}
-async function handleCheckIn(event){event.preventDefault();const f=event.target,count=Number(document.getElementById('groupSize').value),roomNo=Number(document.getElementById('targetRoomSelect').value);const students=Array.from({length:count},(_,i)=>({name:String(f.elements['name_'+(i+1)]?.value||'').trim(),phone:String(f.elements['phone_'+(i+1)]?.value||'').trim()}));if(roomNo===425)return alert('الغرفة 425 مخصصة للمشرفين');if(!roomNo||students.some(x=>!x.name||!x.phone))return alert('أكمل البيانات');await loadRooms();const vacant=globalRoomsData[roomNo]?.beds.map((b,i)=>b?0:i+1).filter(Boolean)||[];if(vacant.length<count)return alert('الأسرة المتاحة غير كافية');let done=0;for(let i=0;i<count;i++){if(!await callSakan('sakan_safe_check_in',{p_room:roomNo,p_bed:vacant[i],p_name:students[i].name,p_phone:students[i].phone}))break;done++;}if(done===count){closeModal('checkInModal');f.reset();}else if(done)alert('تم تسكين '+done+' من '+count+'؛ راجع الغرفة.');}
+async function handleCheckIn(event){event.preventDefault();const f=event.target,count=Number(document.getElementById('groupSize').value),roomNo=Number(document.getElementById('targetRoomSelect').value);const students=Array.from({length:count},(_,i)=>({name:String(f.elements['name_'+(i+1)]?.value||'').trim(),phone:String(f.elements['phone_'+(i+1)]?.value||'').trim()}));if(roomNo===425)return alert('الغرفة 425 مخصصة للمشرفين');if(!roomNo||students.some(x=>!x.name||!x.phone))return alert('أكمل البيانات');await loadRooms();const vacant=globalRoomsData[roomNo]?.beds.map((b,i)=>b?0:i+1).filter(Boolean)||[];if(vacant.length<count)return alert('الأسرة المتاحة غير كافية');
+ const normalizeName=v=>String(v||'').normalize('NFKC').replace(/[\\u064B-\\u065F\\u0670\\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/\\s+/g,' ').trim();
+ const normalizePhone=v=>String(v||'').replace(/\\D/g,'');
+ const {data:activeStudents,error:lookupError}=await sb.from('students').select('student_name,phone,room_number,bed_number').is('checked_out_at',null).limit(3000);
+ if(lookupError)return alert('تعذر التحقق من الطلاب المسجلين: '+lookupError.message);
+ const namesInBatch=new Set(),phonesInBatch=new Set();
+ for(const student of students){
+  const name=normalizeName(student.name),phone=normalizePhone(student.phone);
+  const duplicate=activeStudents.find(x=>normalizeName(x.student_name)===name||(phone&&normalizePhone(x.phone)===phone));
+  if(duplicate)return alert('هذا الطالب مسجل مسبقًا في الغرفة رقم '+duplicate.room_number+'، السرير رقم '+duplicate.bed_number);
+  if(namesInBatch.has(name)||phonesInBatch.has(phone))return alert('يوجد طالب مكرر ضمن الأسماء المدخلة: '+student.name);
+  namesInBatch.add(name);phonesInBatch.add(phone);
+ }
+ let done=0;for(let i=0;i<count;i++){if(!await callSakan('sakan_safe_check_in',{p_room:roomNo,p_bed:vacant[i],p_name:students[i].name,p_phone:students[i].phone}))break;done++;}if(done===count){closeModal('checkInModal');f.reset();}else if(done)alert('تم تسكين '+done+' من '+count+'؛ راجع الغرفة.');}
 let moveStudentState=null;
 async function openMoveStudent(roomNo,bedIndex){
  const modal=document.getElementById('moveStudentModal');
