@@ -300,15 +300,24 @@ function filterMoveRooms(){
 async function confirmMoveStudent(targetRoom){
  const state=moveStudentState;
  if(!state)return;
- const choice=state.available.find(r=>r.room===String(targetRoom));
- if(!choice||!choice.beds.length)return;
- const bed=choice.beds[0];
- if(!confirm('نقل '+state.student.name+' إلى الغرفة '+targetRoom+'؟ سيتم اختيار السرير الشاغر تلقائيًا.'))return;
  const errorBox=document.getElementById('moveStudentError');
- errorBox.textContent='';
  const choices=document.getElementById('moveRoomChoices');
+ errorBox.textContent='';
  choices.querySelectorAll('button').forEach(b=>b.disabled=true);
  try{
+  // Always refresh before assigning: another supervisor may have filled the room.
+  await loadRooms();
+  const target=roomList().find(r=>String(r.number)===String(targetRoom));
+  const freeBeds=target?.beds.map((b,i)=>b?null:i+1).filter(Boolean)||[];
+  if(!freeBeds.length){
+   errorBox.textContent='الغرفة '+targetRoom+' ممتلئة الآن (3/3). اختر غرفة أخرى.';
+   moveStudentState.available=roomList().filter(r=>String(r.number)!==state.fromRoom).map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
+   filterMoveRooms();
+   return;
+  }
+  const bed=freeBeds[0];
+  if(!confirm('نقل '+state.student.name+' إلى الغرفة '+targetRoom+'؟ سيتم اختيار سرير شاغر تلقائيًا.'))return;
+  // The RPC must enforce vacancy atomically as the final protection.
   const {error}=await sb.rpc('sakan_move_student',{p_student_id:state.student.id,p_room:Number(targetRoom),p_bed:bed});
   if(error)throw error;
   moveStudentState=null;
@@ -317,7 +326,8 @@ async function confirmMoveStudent(targetRoom){
   await loadRooms();
   alert('تم نقل الطالب إلى الغرفة '+targetRoom+' بنجاح');
  }catch(e){
-  errorBox.textContent='تعذر النقل: '+e.message;
+  errorBox.textContent='تعذر النقل؛ ربما امتلأت الغرفة أو تغيرت بياناتها. اختر غرفة أخرى. '+e.message;
+ }finally{
   choices.querySelectorAll('button').forEach(b=>b.disabled=false);
  }
 }
