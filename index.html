@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style> body { font-family: 'Cairo', sans-serif; } </style>
 
 <style>
@@ -358,20 +359,25 @@ const safeText = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 async function exportSakanExcel(){
  const btn=document.getElementById('exportSakanExcelButton');
  if(!ready)return alert('سجّل الدخول أولاً');
- if(!window.XLSX)return alert('تعذر تحميل مكتبة Excel. تحقق من الاتصال بالإنترنت.');
+ if(!window.ExcelJS)return alert('تعذر تحميل مكتبة تنسيق Excel. تحقق من الاتصال بالإنترنت.');
  btn.disabled=true;const old=btn.textContent;btn.textContent='جاري تجهيز الملف...';
  try{
   await loadRooms();
-  const rows=[['رقم الغرفة ','اسم الطالب ',' رقم الجوال ']];
+  const wb=new ExcelJS.Workbook();
+  const sheet=wb.addWorksheet('ورقة1',{views:[{rightToLeft:true,state:'normal'}]});
+  sheet.columns=[{width:25.125},{width:37.125},{width:36.75}];
+  sheet.addRow(['رقم الغرفة ','اسم الطالب ',' رقم الجوال ']);
+  const header=sheet.getRow(1);header.height=20.25;
+  header.eachCell(cell=>{cell.font={name:'Arial',size:16,bold:false};cell.alignment={horizontal:'center'};});
   const rooms=roomList().sort((a,b)=>Number(a.number)-Number(b.number));
-  for(const room of rooms){for(const student of room.beds){rows.push([Number(room.number),student?.name||'',student?.phone?String(student.phone):'']);}}
-  const sheet=XLSX.utils.aoa_to_sheet(rows);
-  sheet['!cols']=[{wch:19},{wch:39},{wch:23}];
-  sheet['!autofilter']={ref:'A1:C'+rows.length};
-  sheet['!views']=[{rightToLeft:true}];
-  for(let i=2;i<=rows.length;i++){const cell=sheet['C'+i];if(cell){cell.t='s';cell.v=String(cell.v);}}
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,sheet,'ورقة1');
-  XLSX.writeFile(wb,'كشف_سكن_الطلاب.xlsx');
+  for(const room of rooms){
+   for(const student of room.beds){
+    const row=sheet.addRow([Number(room.number),student?.name||'',student?.phone?String(student.phone):'']);
+    row.getCell(3).numFmt='@';
+   }
+  }
+  const bytes=await wb.xlsx.writeBuffer();
+  downloadFile('كشف_سكن_الطلاب.xlsx',bytes,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
  }catch(e){alert('تعذر تحميل ملف Excel: '+e.message);}finally{btn.disabled=false;btn.textContent=old;}
 }
 function roomList(){return Object.entries(globalRoomsData||{}).filter(([id,r])=>r&&typeof r==='object').map(([id,r])=>({...r,number:String(r.number||id),beds:Array.from({length:r.capacity||r.beds?.length||3},(_,i)=>r.beds?.[i]||null),keyHolder:r.keyHolder||'reception'})).sort((a,b)=>(a.displayOrder??Number(a.number))-(b.displayOrder??Number(b.number)));}
