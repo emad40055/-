@@ -409,7 +409,7 @@ async function exportSakanExcel(){
  }catch(e){alert('تعذر تحميل ملف Excel: '+e.message);}finally{btn.disabled=false;btn.textContent=old;}
 }
 function roomList(){return Object.entries(globalRoomsData||{}).filter(([id,r])=>r&&typeof r==='object').map(([id,r])=>({...r,number:String(r.number||id),beds:Array.from({length:r.capacity||r.beds?.length||3},(_,i)=>r.beds?.[i]||null),keyHolder:r.keyHolder||'reception'})).sort((a,b)=>(a.displayOrder??Number(a.number))-(b.displayOrder??Number(b.number)));}
-function openSettings(){document.getElementById('roomCountInput').value='';document.getElementById('firstRoomInput').value='';document.getElementById('settingsModal').classList.remove('hidden');}
+function openSettings(){document.getElementById('settingsModal').classList.remove('hidden');}
 function setFilter(f){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.id==='filter-'+f));renderApp();}
 function renderApp(){
  const rooms=roomList(),search=(document.getElementById('searchInput')?.value||'').trim().toLowerCase();let occupied=0,full=0,partial=0,vacant=0,delivered=0;
