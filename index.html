@@ -300,7 +300,7 @@ async function openMoveStudent(roomNo,bedIndex){
   await loadRooms();
   const student=globalRoomsData[roomNo]?.beds[bedIndex];
   if(!student){errorBox.textContent='الطالب لم يعد في هذا السرير. حاول مجددًا.';choices.innerHTML='';return;}
-  const available=roomList().filter(r=>String(r.number)!==String(roomNo)&&String(r.number)!=='425').map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
+  const available=roomList().filter(r=>String(r.number)!==String(roomNo)&&String(r.number)!=='1409').map(r=>({room:String(r.number),occupied:r.beds.filter(Boolean).length,beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length).sort((x,y)=>(y.occupied>0)-(x.occupied>0)||Number(x.room)-Number(y.room));
   moveStudentState={student,fromRoom:String(roomNo),available};
   document.getElementById('moveStudentDescription').textContent='نقل '+student.name+' من الغرفة '+roomNo+' — اختر الغرفة الجديدة، وسيتم اختيار سرير شاغر تلقائيًا.';
   filterMoveRooms();
@@ -317,7 +317,7 @@ function filterMoveRooms(){
   const button=document.createElement('button');
   button.type='button';
   button.className='rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-4 text-center font-bold text-blue-800 focus-visible:outline-2 focus-visible:outline-blue-600';
-  button.textContent='غرفة '+r.room+' ('+r.beds.length+' شاغر)';
+  button.textContent='غرفة '+r.room+' ('+r.beds.length+' شاغر'+(r.occupied?'، فيها '+r.occupied+' طلاب':'، فارغة')+')';
   button.addEventListener('click',()=>confirmMoveStudent(r.room));
   choices.appendChild(button);
  });
@@ -336,7 +336,7 @@ async function confirmMoveStudent(targetRoom){
   const freeBeds=target?.beds.map((b,i)=>b?null:i+1).filter(Boolean)||[];
   if(!freeBeds.length){
    errorBox.textContent='الغرفة '+targetRoom+' ممتلئة الآن. اختر غرفة أخرى.';
-   moveStudentState.available=roomList().filter(r=>String(r.number)!==state.fromRoom&&String(r.number)!=='425').map(r=>({room:String(r.number),beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length);
+   moveStudentState.available=roomList().filter(r=>String(r.number)!==state.fromRoom&&String(r.number)!=='1409').map(r=>({room:String(r.number),occupied:r.beds.filter(Boolean).length,beds:r.beds.map((b,i)=>b?null:i+1).filter(Boolean)})).filter(r=>r.beds.length).sort((x,y)=>(y.occupied>0)-(x.occupied>0)||Number(x.room)-Number(y.room));
    filterMoveRooms();
    return;
   }
@@ -456,6 +456,6 @@ async function clearRooms(){
  signalSakanChange();await loadRooms();closeModal('settingsModal');alert('تم تصفير جميع الغرف بنجاح');
 }
 async function fillDemo(){if(roomList().some(r=>r.beds.some(Boolean)))return alert('يوجد طلاب مسكنون');if(!confirm('إضافة ثلاثة طلاب تجريبيين؟'))return;const rooms=roomList();for(let i=0;i<3;i++){const r=rooms[Math.floor(i/2)];if(!r)break;if(!await callSakan('sakan_safe_check_in',{p_room:Number(r.number),p_bed:i%2+1,p_name:'طالب تجريبي '+(i+1),p_phone:'0500000000'}))break;}}
-function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().filter(r=>String(r.number)!=='425').forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});document.getElementById('groupSize').value='1';syncCheckInGroupSize();document.getElementById('checkInModal').classList.remove('hidden');}
+function openCheckInModal(){const select=document.getElementById('targetRoomSelect');select.innerHTML='';roomList().filter(r=>String(r.number)!=='1409').forEach(r=>{const n=r.beds.filter(b=>b===null).length;if(n){const o=document.createElement('option');o.value=r.number;o.textContent='غرفة '+r.number+' (متاح '+n+' أسرة)';select.appendChild(o);}});document.getElementById('groupSize').value='1';syncCheckInGroupSize();document.getElementById('checkInModal').classList.remove('hidden');}
 </script></body>
 </html>
