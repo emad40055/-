@@ -419,7 +419,7 @@ async function exportSakanExcel(){
   downloadData('كشف_سكن_الطلاب.xlsx',bytes,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
  }catch(e){alert('تعذر تحميل ملف Excel: '+e.message);}finally{btn.disabled=false;btn.textContent=old;}
 }
-const disabledSakanRooms=new Set(["423","420","521","411"]);
+const disabledSakanRooms=new Set(["423","420","521","411","408"]);
 function isDisabledSakanRoom(roomNo){return disabledSakanRooms.has(String(roomNo));}
 function roomList(){return Object.entries(globalRoomsData||{}).filter(([id,r])=>r&&typeof r==='object').map(([id,r])=>({...r,number:String(r.number||id),beds:Array.from({length:r.capacity||r.beds?.length||3},(_,i)=>r.beds?.[i]||null),keyHolder:r.keyHolder||'reception'})).sort((a,b)=>(a.displayOrder??Number(a.number))-(b.displayOrder??Number(b.number)));}
 function openSettings(){document.getElementById('settingsModal').classList.remove('hidden');}
