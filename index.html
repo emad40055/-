@@ -368,8 +368,34 @@ async function confirmMoveStudent(targetRoom){
  }
 }
 async function removeStudent(roomNo,bedIndex){if(confirm('تأكيد إخلاء السرير؟'))await callSakan('sakan_check_out',{p_room:Number(roomNo),p_bed:bedIndex+1});}
-async function setKey(roomNo,studentName){const student=globalRoomsData[roomNo]?.beds.find(b=>b?.name===studentName);if(student)await callSakan('sakan_give_key',{p_room:Number(roomNo),p_student_id:student.id});}
-async function returnKeyToReception(roomNo){await callSakan('sakan_return_key',{p_room:Number(roomNo)});}
+const pendingKeyRooms=new Set();
+async function changeRoomKeyInstant(roomNo,newHolder,fn,args){
+ const id=String(roomNo),room=globalRoomsData[id];
+ if(!room||pendingKeyRooms.has(id))return;
+ pendingKeyRooms.add(id);
+ const previous=room.keyHolder;
+ room.keyHolder=newHolder;
+ renderApp();
+ try{
+  const {error}=await sb.rpc(fn,args);
+  if(error)throw error;
+  signalSakanChange();
+ }catch(e){
+  room.keyHolder=previous;
+  renderApp();
+  alert('تعذر حفظ حالة المفتاح: '+e.message);
+ }finally{
+  pendingKeyRooms.delete(id);
+  await loadRooms();
+ }
+}
+async function setKey(roomNo,studentName){
+ const student=globalRoomsData[roomNo]?.beds.find(b=>b?.name===studentName);
+ if(student)await changeRoomKeyInstant(roomNo,student.name,'sakan_give_key',{p_room:Number(roomNo),p_student_id:student.id});
+}
+async function returnKeyToReception(roomNo){
+ await changeRoomKeyInstant(roomNo,'reception','sakan_return_key',{p_room:Number(roomNo)});
+}
         function openShareModal() {
             document.getElementById('currentUrlInput').value = window.location.href;
             document.getElementById('shareModal').classList.remove('hidden');
