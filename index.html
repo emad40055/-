@@ -432,6 +432,7 @@ async function exportSakanExcel(){
   const rooms=roomList().sort((a,b)=>Number(a.number)-Number(b.number));
   for(const room of rooms){
    for(const student of room.beds){
+    if(!student)continue;
     const row=sheet.addRow([Number(room.number),student?.name||'',student?.phone?String(student.phone):'']);
     row.getCell(3).numFmt='@';
     row.height=23;
