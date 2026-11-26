@@ -455,7 +455,7 @@ async function toggleRoomHandover(id){
  const r=globalRoomsData[id];if(!r||!eligibleHandover(r)||handoverPending.has(id))return;
  if(!r.handoverReady)return alert('يجب تفعيل ميزة التسليم في قاعدة البيانات أولاً');
  const next=!r.handedOver;
- if(!confirm(next?'تأكيد تسليم الغرفة '+id+' نهائياً؟':'إلغاء تسليم الغرفة '+id+'؟'))return;
+
  handoverPending.add(id);
  try{const {error}=await sb.rpc('sakan_set_room_handover',{p_room:Number(id),p_handed_over:next});if(error)throw error;if(globalRoomsData[id])globalRoomsData[id].handedOver=next;renderApp();signalSakanChange();queueSakanReload();}catch(e){alert('تعذر حفظ التسليم: '+e.message);}finally{handoverPending.delete(id);}
 }
